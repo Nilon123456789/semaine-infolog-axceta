@@ -1,0 +1,97 @@
+/* Axceta dashboard — base tokens and document chrome */
+
+@font-face {
+  font-family: 'Public Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/PublicSans-Variable.woff2') format('woff2');
+}
+
+:root {
+  /* Cool load-board: mist ground, slate ink, teal signal for live power */
+  --ink: #14201c;
+  --ink-muted: #44554e;
+  --paper: #eef2f0;
+  --paper-deep: #dde5e1;
+  --line: #b7c4be;
+  --live: #0d7a6f;
+  --live-deep: #06554d;
+  --live-glow: rgba(13, 122, 111, 0.35);
+  --ok: #1f6b4a;
+  --ok-soft: #d4ebe1;
+  --off: #5c6b65;
+  --off-soft: #e2e8e5;
+  --danger: #9b1c1c;
+  --danger-soft: #f5d6d6;
+  --focus: #0b5fff;
+  --radius: 2px;
+  --font: 'Public Sans', 'Segoe UI', sans-serif;
+  --shadow: 0 1px 0 rgba(20, 32, 28, 0.05), 0 14px 32px rgba(20, 32, 28, 0.08);
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink);
+  background:
+    radial-gradient(900px 420px at 85% -5%, rgba(13, 122, 111, 0.1), transparent 50%),
+    linear-gradient(165deg, #f5f8f7 0%, var(--paper) 45%, #e5ece9 100%);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(13, 122, 111, 0.22);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Theme unauthored browser chrome to the load-board system */
+* {
+  scrollbar-color: var(--live) var(--paper-deep);
+}
+
+input,
+textarea {
+  caret-color: var(--live-deep);
+}
+
+a {
+  text-underline-offset: 0.18em;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

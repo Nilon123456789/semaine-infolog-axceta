@@ -1,0 +1,10 @@
+.deps
+.venv
+__pycache__
+.pytest_cache
+.ruff_cache
+*.db
+tests
+requirements-dev.txt
+pytest.ini
+ruff.toml

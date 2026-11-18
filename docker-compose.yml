@@ -1,0 +1,159 @@
+# Axceta local energy stack: MQTT broker, cloud API, device simulators, dashboard.
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/broker/uptime", "-C", "1", "-i", "healthcheck", "-W", "3"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - axceta
+
+  cloud:
+    build:
+      context: ./services/cloud
+    ports:
+      - "${CLOUD_PORT:-8000}:8000"
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      ONLINE_THRESHOLD_SECONDS: ${ONLINE_THRESHOLD_SECONDS:-5}
+      STRESS_PEAK_START: ${STRESS_PEAK_START:-16:00}
+      STRESS_PEAK_END: ${STRESS_PEAK_END:-20:00}
+      TZ: ${TZ:-America/Toronto}
+      DATABASE_PATH: /data/axceta.db
+      CORS_ORIGINS: "http://localhost:${DASHBOARD_PORT:-5173},http://127.0.0.1:${DASHBOARD_PORT:-5173}"
+    volumes:
+      - cloud-data:/data
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - axceta
+
+  lamp:
+    build:
+      context: ./services/devices
+      dockerfile: lamp/Dockerfile
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      DEVICE_ID: lamp-living-room
+      DEVICE_NAME: Living Room Lamp
+      DEVICE_TYPE: lamp
+      NOMINAL_WATTS: "40"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    networks:
+      - axceta
+    restart: unless-stopped
+
+  powerbar:
+    build:
+      context: ./services/devices
+      dockerfile: powerbar/Dockerfile
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      DEVICE_ID: powerbar-office
+      DEVICE_NAME: Office Powerbar
+      DEVICE_TYPE: powerbar
+      OUTLET_WATTS: "25,60,5,0"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    networks:
+      - axceta
+    restart: unless-stopped
+
+  heater:
+    build:
+      context: ./services/devices
+      dockerfile: heater/Dockerfile
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      DEVICE_ID: heater-basement
+      DEVICE_NAME: Basement Heater
+      DEVICE_TYPE: heater
+      NOMINAL_WATTS: "1500"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    networks:
+      - axceta
+    restart: unless-stopped
+
+  fridge:
+    build:
+      context: ./services/devices
+      dockerfile: fridge/Dockerfile
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      DEVICE_ID: fridge-kitchen
+      DEVICE_NAME: Kitchen Fridge
+      DEVICE_TYPE: fridge
+      RUN_WATTS: "120"
+      IDLE_WATTS: "8"
+      CYCLE_SECONDS: "40"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    networks:
+      - axceta
+    restart: unless-stopped
+
+  kettle:
+    build:
+      context: ./services/devices
+      dockerfile: kettle/Dockerfile
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      DEVICE_ID: kettle-kitchen
+      DEVICE_NAME: Kitchen Kettle
+      DEVICE_TYPE: kettle
+      NOMINAL_WATTS: "2000"
+      START_POWERED: "false"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    networks:
+      - axceta
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ./services/dashboard
+      args:
+        # Browser on the host reaches cloud via published port.
+        VITE_CLOUD_URL: http://localhost:${CLOUD_PORT:-8000}
+    ports:
+      - "${DASHBOARD_PORT:-5173}:80"
+    depends_on:
+      cloud:
+        condition: service_healthy
+    networks:
+      - axceta
+
+
+volumes:
+  cloud-data:
+
+networks:
+  axceta:
+    driver: bridge
